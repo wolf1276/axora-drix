@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AXORA — Drone Weather Flight Advisor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black: #000;
+      --white: #fff;
+      --gray: #f5f5f5;
+      --gray2: #e8e8e8;
+      --safe: #00C853;
+      --danger: #FF3B30;
+      --border: 2px solid #000;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--white);
+      color: var(--black);
+      min-height: 100vh;
+      background: linear-gradient(-45deg, #f5f5f5, #ebebeb, #f0f7f0, #fafafa);
+      background-size: 400% 400%;
+      animation: bgshift 12s ease infinite;
+    }
+
+    @keyframes bgshift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* navbar */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      border-bottom: var(--border);
+      background: var(--white);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo-box {
+      width: 28px;
+      height: 28px;
+      background: var(--black);
+      color: var(--white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .logo-text {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 18px;
+    }
+
+    .nav-location {
+      font-size: 13px;
+      color: #666;
+      border: 1px solid #ccc;
+      padding: 4px 12px;
+      display: none;
+    }
+
+    /* hero */
+    .hero {
+      text-align: center;
+      padding: 60px 24px 40px;
+    }
+
+    .hero-label {
+      font-size: 11px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: #999;
+      margin-bottom: 16px;
+    }
+
+    .hero h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(36px, 7vw, 72px);
+      font-weight: 700;
+      line-height: 1.02;
+      letter-spacing: -0.02em;
+      opacity: 0;
+      transform: translateY(24px);
+      animation: heroIn 0.6s ease forwards 0.1s;
+    }
+
+    .hero-sub {
+      color: #888;
+      margin-top: 16px;
+      font-size: 15px;
+      opacity: 0;
+      animation: heroIn 0.5s ease forwards 0.3s;
+    }
+
+    @keyframes heroIn {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* search */
+    .search-wrap {
+      display: flex;
+      max-width: 380px;
+      margin: 28px auto 0;
+      opacity: 0;
+      animation: heroIn 0.5s ease forwards 0.45s;
+    }
+
+    .search-wrap input {
+      flex: 1;
+      border: var(--border);
+      border-right: none;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      background: var(--white);
+    }
+
+    .search-wrap input:focus { background: var(--gray); }
+
+    .search-wrap button {
+      border: var(--border);
+      background: var(--black);
+      color: var(--white);
+      padding: 10px 18px;
+      font-size: 13px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .search-wrap button:hover { opacity: 0.8; }
+    .search-wrap button:active { opacity: 0.6; }
+
+    .location-hint {
+      text-align: center;
+      font-size: 12px;
+      color: #aaa;
+      margin-top: 10px;
+    }
+
+    .location-hint a { color: #555; cursor: pointer; text-decoration: underline; }
+
+    /* dashboard */
+    .dashboard {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 0 24px 60px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* error */
+    .error-box {
+      border: 2px solid var(--danger);
+      background: #fff5f5;
+      padding: 14px 18px;
+      font-size: 13px;
+      color: var(--danger);
+      display: none;
+    }
+
+    /* shimmer / loading */
+    .shimmer-card {
+      border: var(--border);
+      height: 160px;
+      background: linear-gradient(90deg, #f0f0f0 25%, #e4e4e4 50%, #f0f0f0 75%);
+      background-size: 400px;
+      animation: shimmer 1.4s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: -400px 0; }
+      100% { background-position: 400px 0; }
+    }
+
+    /* weather card */
+    .weather-card {
+      border: var(--border);
+      background: var(--white);
+      box-shadow: 3px 3px 0 #000;
+      display: none;
+      animation: fadeUp 0.4s ease;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .weather-header {
+      border-bottom: var(--border);
+      padding: 18px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .weather-city {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    .weather-desc {
+      font-size: 13px;
+      color: #888;
+      margin-top: 3px;
+      text-transform: capitalize;
+    }
+
+    .weather-icon { width: 54px; height: 54px; }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .metric {
+      padding: 18px 22px;
+      border-right: var(--border);
+      border-bottom: var(--border);
+    }
+
+    .metric:nth-child(2n) { border-right: none; }
+    .metric:nth-child(3), .metric:nth-child(4) { border-bottom: none; }
+
+    .metric-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #aaa;
+      margin-bottom: 8px;
+    }
+
+    .metric-value {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 26px;
+      font-weight: 700;
+    }
+
+    .metric-sub {
+      font-size: 12px;
+      color: #aaa;
+      margin-top: 4px;
+    }
+
+    .metric-sub.warn { color: var(--danger); }
+
+    /* safety card */
+    .safety-card {
+      border: var(--border);
+      background: var(--white);
+      box-shadow: 3px 3px 0 #000;
+      display: none;
+      animation: fadeUp 0.4s ease 0.15s both;
+      overflow: hidden;
+    }
+
+    .safety-main {
+      padding: 40px 24px;
+      text-align: center;
+      border-bottom: var(--border);
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 0; /* neo-brutal — square dot */
+      animation: dotpulse 1.6s ease-in-out infinite;
+    }
+
+    @keyframes dotpulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.5); opacity: 0.7; }
+    }
+
+    .status-label {
+      font-size: 11px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: #aaa;
+    }
+
+    .safety-verdict {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(40px, 8vw, 64px);
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+
+    .safety-verdict.safe { color: var(--safe); }
+    .safety-verdict.danger { color: var(--danger); }
+
+    /* glow animation on the card */
+    .safety-card.is-safe { animation: fadeUp 0.4s ease 0.15s both, glowSafe 3s ease-in-out 1s infinite; }
+    .safety-card.is-danger { animation: fadeUp 0.4s ease 0.15s both, glowDanger 3s ease-in-out 1s infinite; }
+
+    @keyframes glowSafe {
+      0%, 100% { box-shadow: 3px 3px 0 #000; }
+      50% { box-shadow: 3px 3px 0 #000, 0 0 24px rgba(0, 200, 83, 0.3); }
+    }
+
+    @keyframes glowDanger {
+      0%, 100% { box-shadow: 3px 3px 0 #000; }
+      50% { box-shadow: 3px 3px 0 #000, 0 0 24px rgba(255, 59, 48, 0.3); }
+    }
+
+    .safety-note {
+      font-size: 13px;
+      color: #888;
+      margin-top: 10px;
+    }
+
+    .reasons {
+      padding: 16px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .reason-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 13px;
+      color: #555;
+    }
+
+    .reason-x { color: var(--danger); font-weight: 700; }
+    .reason-check { color: var(--safe); font-weight: 700; }
+
+    /* refresh */
+    .refresh-wrap {
+      text-align: center;
+      display: none;
+    }
+
+    .refresh-btn {
+      border: var(--border);
+      background: var(--white);
+      padding: 10px 22px;
+      font-size: 13px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      cursor: pointer;
+      box-shadow: 2px 2px 0 #000;
+      transition: box-shadow 0.1s, transform 0.1s;
+    }
+
+    .refresh-btn:hover { box-shadow: none; transform: translate(2px, 2px); }
+    .refresh-btn:active { background: var(--gray); }
+    .refresh-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* footer */
+    footer {
+      border-top: 1px solid #e0e0e0;
+      text-align: center;
+      padding: 20px;
+      font-size: 12px;
+      color: #bbb;
+    }
+
+    @media (max-width: 480px) {
+      .metrics { grid-template-columns: 1fr; }
+      .metric { border-right: none !important; }
+      .metric:last-child { border-bottom: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav>
+  <div class="logo">
+    <div class="logo-box">AX</div>
+    <span class="logo-text">AXORA</span>
+  </div>
+  <div class="nav-location" id="navLocation">📍 Detecting...</div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <p class="hero-label">Real-time Drone Safety Advisor</p>
+  <h1>CAN YOUR DRONE<br>FLY RIGHT NOW?</h1>
+  <p class="hero-sub">Live weather check. Instant flight clearance. No guessing.</p>
+
+  <div class="search-wrap">
+    <input type="text" id="cityInput" placeholder="Enter a city name..." />
+    <button onclick="searchCity()">Search</button>
+  </div>
+  <p class="location-hint" id="locationHint">Detecting your location...</p>
+</section>
+
+<!-- DASHBOARD -->
+<div class="dashboard">
+
+  <div class="error-box" id="errorBox"></div>
+
+  <!-- shimmer placeholders shown while loading -->
+  <div class="shimmer-card" id="shimmer1"></div>
+  <div class="shimmer-card" id="shimmer2" style="height:180px"></div>
+
+  <!-- weather card -->
+  <div class="weather-card" id="weatherCard">
+    <div class="weather-header">
+      <div>
+        <div class="weather-city" id="cityName">—</div>
+        <div class="weather-desc" id="weatherDesc">—</div>
+      </div>
+      <img class="weather-icon" id="weatherIcon" src="" alt="weather icon" />
+    </div>
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric-label">🌡 Temperature</div>
+        <div class="metric-value" id="temp">—</div>
+        <div class="metric-sub" id="feelsLike">—</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">💨 Wind Speed</div>
+        <div class="metric-value" id="wind">—</div>
+        <div class="metric-sub" id="windNote">—</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">💧 Humidity</div>
+        <div class="metric-value" id="humidity">—</div>
+        <div class="metric-sub">Relative humidity</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">👁 Visibility</div>
+        <div class="metric-value" id="visibility">—</div>
+        <div class="metric-sub">Horizontal range</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- safety card -->
+  <div class="safety-card" id="safetyCard">
+    <div class="safety-main">
+      <div class="status-row">
+        <div class="status-dot" id="statusDot"></div>
+        <span class="status-label">Flight Status</span>
+      </div>
+      <div class="safety-verdict" id="verdict">—</div>
+      <p class="safety-note" id="safetyNote">Checking conditions...</p>
+    </div>
+    <div class="reasons" id="reasonsList"></div>
+  </div>
+
+  <!-- refresh button -->
+  <div class="refresh-wrap" id="refreshWrap">
+    <button class="refresh-btn" id="refreshBtn" onclick="refresh()">↻ Refresh Weather</button>
+  </div>
+
+</div>
+
+<footer>AXORA © 2026 — Drone Weather Flight Advisor</footer>
+
+<script>
+  // --- CONFIG ---
+  // paste your OpenWeather key here or leave empty for demo mode
+  var API_KEY = "";
+
+  var currentLat = null;
+  var currentLon = null;
+  var currentCity = null;
+
+  // --- INIT ---
+  window.addEventListener("load", function() {
+    detectLocation();
+  });
+
+  function detectLocation() {
+    setHint("Detecting your location...");
+    if (!navigator.geolocation) {
+      setHint("Geolocation not supported. Enter a city above.");
+      hideShimmers();
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        currentLat = pos.coords.latitude;
+        currentLon = pos.coords.longitude;
+        currentCity = null;
+        setHint("Using your current location · <a onclick='resetToGeo()'>refresh</a>");
+        loadWeatherByCoords(currentLat, currentLon);
+      },
+      function(err) {
+        setHint("⚠ " + err.message + ". Enter a city above.");
+        hideShimmers();
+      },
+      { timeout: 8000, maximumAge: 60000 }
+    );
+  }
+
+  function searchCity() {
+    var val = document.getElementById("cityInput").value.trim();
+    if (!val) return;
+    currentCity = val;
+    currentLat = null;
+    currentLon = null;
+    document.getElementById("cityInput").value = "";
+    setHint("Showing: " + val + " · <a onclick='resetToGeo()'>use my location</a>");
+    loadWeatherByCity(val);
+  }
+
+  document.getElementById("cityInput").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") searchCity();
+  });
+
+  function resetToGeo() {
+    currentCity = null;
+    detectLocation();
+  }
+
+  function refresh() {
+    if (currentCity) {
+      loadWeatherByCity(currentCity);
+    } else if (currentLat !== null) {
+      loadWeatherByCoords(currentLat, currentLon);
+    }
+  }
+
+  // --- FETCH ---
+  function loadWeatherByCoords(lat, lon) {
+    showShimmers();
+    hideCards();
+
+    if (!API_KEY) {
+      // demo mode
+      setTimeout(function() {
+        renderWeather(getMockData("Your Location"));
+      }, 900);
+      return;
+    }
+
+    fetch("https://api.openweathermap.org/data/2.5/weather?lat=" + lat + "&lon=" + lon + "&appid=" + API_KEY + "&units=metric")
+      .then(function(r) {
+        if (!r.ok) throw new Error("API error " + r.status);
+        return r.json();
+      })
+      .then(function(data) { renderWeather(parseAPI(data)); })
+      .catch(function(e) { showError(e.message); });
+  }
+
+  function loadWeatherByCity(city) {
+    showShimmers();
+    hideCards();
+
+    if (!API_KEY) {
+      setTimeout(function() {
+        renderWeather(getMockData(city));
+      }, 900);
+      return;
+    }
+
+    fetch("https://api.openweathermap.org/data/2.5/weather?q=" + encodeURIComponent(city) + "&appid=" + API_KEY + "&units=metric")
+      .then(function(r) {
+        if (!r.ok) throw new Error(r.status === 404 ? "City not found: " + city : "API error " + r.status);
+        return r.json();
+      })
+      .then(function(data) { renderWeather(parseAPI(data)); })
+      .catch(function(e) { showError(e.message); });
+  }
+
+  function parseAPI(d) {
+    return {
+      city: d.name,
+      country: d.sys ? d.sys.country : "",
+      temp: Math.round(d.main.temp),
+      feelsLike: Math.round(d.main.feels_like),
+      humidity: d.main.humidity,
+      windKmh: Math.round((d.wind ? d.wind.speed : 0) * 3.6),
+      desc: d.weather[0].description,
+      conditionId: d.weather[0].id,
+      icon: d.weather[0].icon,
+      visibility: Math.round((d.visibility || 10000) / 1000)
+    };
+  }
+
+  function getMockData(city) {
+    return {
+      city: city, country: "IN",
+      temp: 26, feelsLike: 27,
+      humidity: 58, windKmh: 13,
+      desc: "few clouds", conditionId: 801,
+      icon: "02d", visibility: 10
+    };
+  }
+
+  // --- RENDER ---
+  function renderWeather(w) {
+    hideShimmers();
+    hideError();
+
+    var label = w.city + (w.country ? ", " + w.country : "");
+
+    // navbar location
+    var nl = document.getElementById("navLocation");
+    nl.textContent = "📍 " + label;
+    nl.style.display = "block";
+
+    // weather card
+    document.getElementById("cityName").textContent = label;
+    document.getElementById("weatherDesc").textContent = w.desc;
+    document.getElementById("weatherIcon").src = "https://openweathermap.org/img/wn/" + w.icon + "@2x.png";
+    document.getElementById("temp").textContent = w.temp + "°C";
+    document.getElementById("feelsLike").textContent = "Feels like " + w.feelsLike + "°C";
+    document.getElementById("wind").textContent = w.windKmh + " km/h";
+
+    var windNote = document.getElementById("windNote");
+    if (w.windKmh > 20) {
+      windNote.textContent = "⚠ Above 20 km/h limit";
+      windNote.className = "metric-sub warn";
+    } else {
+      windNote.textContent = "Within safe range";
+      windNote.className = "metric-sub";
+    }
+
+    document.getElementById("humidity").textContent = w.humidity + "%";
+    document.getElementById("visibility").textContent = w.visibility + " km";
+
+    document.getElementById("weatherCard").style.display = "block";
+
+    // flight safety
+    var reasons = [];
+    if (w.windKmh > 20) reasons.push("Wind " + w.windKmh + " km/h exceeds 20 km/h limit");
+    var id = w.conditionId;
+    if (id >= 200 && id < 300) reasons.push("Thunderstorm conditions");
+    if (id >= 300 && id < 600) reasons.push("Rain or drizzle detected");
+    if (id >= 600 && id < 700) reasons.push("Snow conditions");
+    if (id >= 700 && id < 800) reasons.push("Poor visibility (fog / haze)");
+
+    var safe = reasons.length === 0;
+    var card = document.getElementById("safetyCard");
+    var dot  = document.getElementById("statusDot");
+    var verdict = document.getElementById("verdict");
+    var note = document.getElementById("safetyNote");
+    var list = document.getElementById("reasonsList");
+
+    dot.style.background = safe ? "var(--safe)" : "var(--danger)";
+    verdict.textContent = safe ? "SAFE TO FLY" : "NOT SAFE";
+    verdict.className = "safety-verdict " + (safe ? "safe" : "danger");
+    note.textContent = safe
+      ? "All conditions within acceptable limits."
+      : reasons.length + " issue" + (reasons.length > 1 ? "s" : "") + " detected.";
+
+    list.innerHTML = "";
+    if (safe) {
+      list.innerHTML = '<div class="reason-item"><span class="reason-check">✓</span><span>Wind, precipitation, and visibility all clear.</span></div>';
+    } else {
+      reasons.forEach(function(r) {
+        list.innerHTML += '<div class="reason-item"><span class="reason-x">✕</span><span>' + r + '</span></div>';
+      });
+    }
+
+    card.className = "safety-card " + (safe ? "is-safe" : "is-danger");
+    card.style.display = "block";
+
+    document.getElementById("refreshWrap").style.display = "block";
+  }
+
+  // --- UI HELPERS ---
+  function showShimmers() {
+    document.getElementById("shimmer1").style.display = "block";
+    document.getElementById("shimmer2").style.display = "block";
+  }
+  function hideShimmers() {
+    document.getElementById("shimmer1").style.display = "none";
+    document.getElementById("shimmer2").style.display = "none";
+  }
+  function hideCards() {
+    document.getElementById("weatherCard").style.display = "none";
+    document.getElementById("safetyCard").style.display = "none";
+    document.getElementById("refreshWrap").style.display = "none";
+  }
+  function showError(msg) {
+    hideShimmers();
+    var b = document.getElementById("errorBox");
+    b.textContent = "⚠ " + msg;
+    b.style.display = "block";
+  }
+  function hideError() {
+    document.getElementById("errorBox").style.display = "none";
+  }
+  function setHint(html) {
+    document.getElementById("locationHint").innerHTML = html;
+  }
+</script>
+
+</body>
+</html>
